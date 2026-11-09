@@ -1,13 +1,16 @@
-"""Command-line entry points (``uv run train|play|evaluate``).
-
-Placeholders until the matching steps are implemented.
-"""
+"""Command-line entry points (``uv run train|play|evaluate``)."""
 
 from __future__ import annotations
 
+from chessbot.config import ModelConfig, TrainConfig, load_config
+
 
 def train() -> None:
-    raise SystemExit("train: not implemented yet (Step 5)")
+    """Supervised pretraining using configs/train.yaml and configs/model.yaml."""
+    from chessbot.training import train as run_training
+
+    best = run_training(load_config(TrainConfig, "train"), load_config(ModelConfig, "model"))
+    print(f"best checkpoint: {best}")
 
 
 def play() -> None:

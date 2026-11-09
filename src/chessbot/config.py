@@ -31,9 +31,14 @@ class TrainConfig:
     batch_size: int = 256
     learning_rate: float = 1e-3
     weight_decay: float = 1e-4
-    epochs: int = 1
+    epochs: int = 2
     value_loss_weight: float = 1.0
     seed: int = 0
+    data_dir: str = "data/processed/lichess-2016-06"
+    checkpoint_dir: str = "checkpoints/supervised"
+    eval_every: int = 2000
+    max_steps: int = 0  # 0 = run `epochs` full passes
+    warmup_steps: int = 200
 
 
 @dataclass(frozen=True)
