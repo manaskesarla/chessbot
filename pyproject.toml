@@ -50,3 +50,6 @@ select = ["E", "F", "I", "UP", "B"]
 python_version = "3.11"
 strict = true
 ignore_missing_imports = true
+
+[tool.ruff.lint.per-file-ignores]
+"scripts/dashboard.py" = ["E501"]

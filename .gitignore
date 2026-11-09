@@ -31,3 +31,6 @@ lichess-bot/config.yml
 
 # Jupyter
 .ipynb_checkpoints/
+
+# Generated progress page
+/reports/

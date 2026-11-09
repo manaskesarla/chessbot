@@ -115,12 +115,14 @@ def prepare_dataset(
     source: Path,
     out_dir: Path,
     max_games: int,
-    flt: GameFilter = GameFilter(),
+    flt: GameFilter | None = None,
     shard_positions: int = 2_000_000,
     progress: bool = True,
 ) -> dict[str, int]:
     """Stream ``source``, keep up to ``max_games`` accepted games, write shards to ``out_dir``."""
     from tqdm import tqdm
+
+    flt = flt or GameFilter()
 
     out_dir.mkdir(parents=True, exist_ok=True)
     buffer: list[Records] = []
