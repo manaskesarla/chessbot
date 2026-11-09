@@ -3,3 +3,5 @@ c_puct: 1.5
 dirichlet_alpha: 0.3
 dirichlet_fraction: 0.25
 temperature_moves: 30
+batch_size: 16
+fpu_reduction: 0.2

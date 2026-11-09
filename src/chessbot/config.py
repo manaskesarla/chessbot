@@ -48,6 +48,8 @@ class MCTSConfig:
     dirichlet_alpha: float = 0.3
     dirichlet_fraction: float = 0.25
     temperature_moves: int = 30
+    batch_size: int = 16  # leaves evaluated per network call
+    fpu_reduction: float = 0.2  # value assumed for unvisited moves = parent value - this
 
 
 @dataclass(frozen=True)
