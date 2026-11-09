@@ -25,6 +25,7 @@ dev = [
 
 [project.scripts]
 train = "chessbot.cli:train"
+selfplay = "chessbot.cli:selfplay"
 play = "chessbot.cli:play"
 evaluate = "chessbot.cli:evaluate"
 smoke = "chessbot.smoke:main"

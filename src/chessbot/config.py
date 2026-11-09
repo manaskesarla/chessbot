@@ -53,6 +53,30 @@ class MCTSConfig:
 
 
 @dataclass(frozen=True)
+class SelfPlayConfig:
+    iterations: int = 8
+    games_per_iteration: int = 64
+    simulations: int = 64  # MCTS simulations per self-play move
+    workers: int = 4  # parallel game-generating processes (0 = in this process)
+    max_plies: int = 200  # longer games are adjudicated as draws
+    buffer_positions: int = 100_000  # rolling replay window
+    human_fraction: float = 0.5  # share of each training batch drawn from human games
+    human_subset: int = 1_000_000  # human positions kept in memory for mixing
+    train_steps: int = 300
+    batch_size: int = 256
+    learning_rate: float = 2e-4
+    weight_decay: float = 1e-4
+    value_loss_weight: float = 1.0
+    gate_games: int = 32
+    gate_simulations: int = 64
+    gate_threshold: float = 0.55
+    seed: int = 0
+    init_checkpoint: str = "checkpoints/supervised/best.pt"
+    human_data_dir: str = "data/processed/lichess-2016-06"
+    output_dir: str = "checkpoints/selfplay"
+
+
+@dataclass(frozen=True)
 class EvalConfig:
     stockfish_path: str = "stockfish"
     stockfish_elos: tuple[int, ...] = (1320, 1500, 1700, 1900)

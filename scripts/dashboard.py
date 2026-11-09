@@ -10,6 +10,8 @@ from __future__ import annotations
 import argparse
 import html
 import json
+import re
+import subprocess
 import time
 from pathlib import Path
 
@@ -25,7 +27,7 @@ STEPS = [
     ("Step 3", "Baselines", "Random, greedy, alpha-beta bots + Stockfish match runner + Elo CIs"),
     ("Step 4", "Network", "ResNet 6x64, 505k params, ~27k positions/s on the Mac GPU"),
     ("Step 5", "Supervised pretraining", "150k Lichess 2000+ games, 10.75M positions"),
-    ("Step 6", "MCTS search", "Not started"),
+    ("Step 6", "MCTS search", "Batched PUCT search + position cache; ~1,000 sims/s; mate puzzles pass"),
     ("Step 7", "Self-play RL loop", "Not started"),
     ("Step 8", "Rigorous evaluation", "Not started"),
     ("Step 9", "Lichess deployment", "Not started (needs a fresh Lichess account)"),
@@ -82,6 +84,67 @@ def chart(
         f"<div class='chart'><h3>{title}</h3><div class='legend'>{legend}</div>"
         f"<svg viewBox='0 0 {w} {h}' role='img' aria-label='{title}'>{grid}{lines}</svg></div>"
     )
+
+
+RESULT_LINE = re.compile(
+    r"^(\S+) vs (\S+)\s+\+(\d+) =(\d+) -(\d+) \(([\d.]+)%, Elo diff ([+-]\d+) "
+    r"\[([+-]\d+), ([+-]\d+)\]\)"
+)
+
+
+def results_tables() -> str:
+    """One table per reports/eval_*.txt, showing games as they finish."""
+    out = ""
+    for path in sorted((REPO_ROOT / "reports").glob("eval_*.txt")):
+        lines = path.read_text().splitlines()
+        if not lines:
+            continue
+        rows = ""
+        for line in lines[1:]:
+            m = RESULT_LINE.match(line)
+            if m:
+                _, opp, w, d, lo, pct, diff, low, high = m.groups()
+                rows += (
+                    f"<tr><td>{html.escape(opp)}</td><td>{w} / {d} / {lo}</td><td>{pct}%</td>"
+                    f"<td><b>{diff}</b> <span class='muted'>({low} to {high})</span></td></tr>"
+                )
+        title = html.escape(lines[0].strip("- "))
+        out += (
+            f"<div class='chart'><h3>{title}</h3><table class='res'><tr><th>Opponent</th>"
+            f"<th>W / D / L</th><th>Score</th><th>Elo diff (95% range)</th></tr>{rows}</table></div>"
+        )
+    return out or "<p class='muted'>No evaluation results yet.</p>"
+
+
+def running_jobs() -> str:
+    names = {
+        "uv run train": "Supervised training",
+        "eval_net.py": "Strength evaluation",
+        "selfplay": "Self-play training loop",
+        "prepare_data.py": "Data preprocessing",
+    }
+    ps = subprocess.run(["ps", "-axo", "etime=,command="], capture_output=True, text=True).stdout
+    jobs = []
+    for line in ps.splitlines():
+        if "/bin/zsh" in line or "pgrep" in line or "uv run" in line and "train" not in line:
+            continue
+        for key, label in names.items():
+            if key in line and ".venv/bin/python" in line or key == "uv run train" and key in line:
+                jobs.append(f"<li><b>{label}</b> <span class='muted'>running {line.split()[0]}</span></li>")
+                break
+    return "<ul>" + "".join(jobs) + "</ul>" if jobs else "<p class='muted'>Nothing running.</p>"
+
+
+def recent_commits() -> str:
+    log = subprocess.run(
+        ["git", "log", "-8", "--pretty=format:%h|%ar|%s"],
+        capture_output=True, text=True, cwd=REPO_ROOT,
+    ).stdout
+    rows = ""
+    for line in log.splitlines():
+        sha, when, subject = line.split("|", 2)
+        rows += f"<tr><td><code>{sha}</code></td><td>{html.escape(subject)}</td><td class='muted'>{when}</td></tr>"
+    return f"<table>{rows}</table>"
 
 
 def build() -> str:
@@ -174,6 +237,8 @@ h1{{margin:0 0 4px;font-size:24px}} h3{{margin:0 0 6px;font-size:14px}}
 .legend{{display:flex;gap:14px;font-size:12px;margin-bottom:4px}}
 .key i{{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px}}
 table{{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden}}
+table.res{{border:0}} th{{text-align:left;font-size:12px;color:var(--muted);padding:6px 12px}}
+ul{{margin:0;padding-left:18px}} code{{font-size:12px}}
 td{{padding:9px 12px;border-top:1px solid var(--line);vertical-align:top}} tr:first-child td{{border-top:0}}
 .pill{{display:inline-block;padding:1px 9px;border-radius:99px;font-size:12px;border:1px solid}}
 .done{{color:var(--ok)}} .run{{color:var(--run)}} .todo{{color:var(--muted)}}
@@ -184,8 +249,14 @@ td{{padding:9px 12px;border-top:1px solid var(--line);vertical-align:top}} tr:fi
 <div class="bar"><i></i></div>
 <div class="stats">{stats}</div>
 <div class="charts">{charts}</div>
+<h3>Running right now</h3>
+<div class="chart">{running_jobs()}</div>
+<h3>Strength results (live)</h3>
+<div class="charts">{results_tables()}</div>
 <h3>Project steps</h3>
 <table>{rows}</table>
+<h3>Recent changes (git)</h3>
+{recent_commits()}
 </main></body></html>"""
 
 

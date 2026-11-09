@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from chessbot.config import ModelConfig, TrainConfig, load_config
+from chessbot.config import MCTSConfig, ModelConfig, SelfPlayConfig, TrainConfig, load_config
 
 
 def train() -> None:
@@ -10,6 +10,14 @@ def train() -> None:
     from chessbot.training import train as run_training
 
     best = run_training(load_config(TrainConfig, "train"), load_config(ModelConfig, "model"))
+    print(f"best checkpoint: {best}")
+
+
+def selfplay() -> None:
+    """Self-play RL loop using configs/selfplay.yaml and configs/mcts.yaml."""
+    from chessbot.selfplay import run
+
+    best = run(load_config(SelfPlayConfig, "selfplay"), load_config(MCTSConfig, "mcts"))
     print(f"best checkpoint: {best}")
 
 
