@@ -15,10 +15,10 @@ env/
 .DS_Store
 
 # Large or generated artifacts (keep out of git)
-data/
-checkpoints/
-logs/
-models/
+/data/
+/checkpoints/
+/logs/
+/models/
 *.pt
 *.pth
 *.npy
