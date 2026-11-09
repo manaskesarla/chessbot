@@ -28,8 +28,8 @@ STEPS = [
     ("Step 4", "Network", "ResNet 6x64, 505k params, ~27k positions/s on the Mac GPU"),
     ("Step 5", "Supervised pretraining", "150k Lichess 2000+ games, 10.75M positions"),
     ("Step 6", "MCTS search", "Batched PUCT search + position cache; ~1,000 sims/s; mate puzzles pass"),
-    ("Step 7", "Self-play RL loop", "Not started"),
-    ("Step 8", "Rigorous evaluation", "Not started"),
+    ("Step 7", "Self-play RL loop", "Built and tested; first real run pending"),
+    ("Step 8", "Rigorous evaluation", "Built and tested: Stockfish harness, rating fit, chart; not yet run"),
     ("Step 9", "Lichess deployment", "Not started (needs a fresh Lichess account)"),
     ("Step 10", "Resume packaging", "Not started"),
 ]
@@ -147,6 +147,45 @@ def recent_commits() -> str:
     return f"<table>{rows}</table>"
 
 
+def stage_table() -> str:
+    """Rating per stage from results/summary.csv (written by `uv run evaluate`)."""
+    path = REPO_ROOT / "results" / "summary.csv"
+    if not path.exists():
+        return "<p class='muted'>No stage ratings yet (run uv run evaluate).</p>"
+    rows = ""
+    for line in path.read_text().splitlines()[1:]:
+        stage, rating, low, high, games, *_ = line.split(",")
+        rows += (
+            f"<tr><td>{html.escape(stage)}</td><td><b>{float(rating):.0f}</b> "
+            f"<span class='muted'>({float(low):.0f} to {float(high):.0f})</span></td>"
+            f"<td>{games}</td></tr>"
+        )
+    return (
+        "<table class='res'><tr><th>Stage</th><th>Elo, Stockfish scale (95%)</th>"
+        f"<th>Games</th></tr>{rows}</table>"
+    )
+
+
+def selfplay_table() -> str:
+    path = REPO_ROOT / "checkpoints" / "selfplay" / "iterations.jsonl"
+    if not path.exists():
+        return "<p class='muted'>Self-play has not run yet.</p>"
+    rows = ""
+    for line in path.read_text().splitlines():
+        r = json.loads(line)
+        verdict = "promoted" if r["promoted"] else "rejected"
+        rows += (
+            f"<tr><td>{r['iteration']}</td><td>{r['games']} games / {r['positions']:,} pos</td>"
+            f"<td>{r['policy_loss']:.3f} / {r['value_loss']:.3f}</td>"
+            f"<td>+{r['gate_wins']} ={r['gate_draws']} -{r['gate_losses']} "
+            f"({r['gate_score']:.0%})</td><td>{verdict}</td></tr>"
+        )
+    return (
+        "<table class='res'><tr><th>Iter</th><th>Self-play</th><th>Policy / value loss</th>"
+        f"<th>Gate vs best</th><th>Result</th></tr>{rows}</table>"
+    )
+
+
 def build() -> str:
     cfg = load_config(TrainConfig, "train")
     ckpt = REPO_ROOT / cfg.checkpoint_dir
@@ -192,6 +231,8 @@ def build() -> str:
     for label, name, note in STEPS:
         if label == "Step 5":
             status, cls = ("done", "done") if done else (f"training {pct:.0f}%", "run")
+        elif note.startswith("Built"):
+            status, cls = "code ready", "run"
         elif note.startswith("Not started"):
             status, cls = "pending", "todo"
         else:
@@ -253,7 +294,7 @@ td{{padding:9px 12px;border-top:1px solid var(--line);vertical-align:top}} tr:fi
 <div class="chart">{running_jobs()}</div>
 <h3>Strength results (live)</h3>
 <div class="charts">{results_tables()}</div>
-<h3>Project steps</h3>
+<h3>Stage ratings (results/summary.csv)</h3>\n<div class="chart">{stage_table()}</div>\n<h3>Self-play iterations</h3>\n<div class="chart">{selfplay_table()}</div>\n<h3>Project steps</h3>
 <table>{rows}</table>
 <h3>Recent changes (git)</h3>
 {recent_commits()}

@@ -82,6 +82,8 @@ class EvalConfig:
     stockfish_elos: tuple[int, ...] = (1320, 1500, 1700, 1900)
     games_per_level: int = 100
     simulations: int = 100
+    stockfish_movetime: float = 0.05  # seconds per Stockfish move
+    results_dir: str = "results"
 
 
 def load_config(cls: type[T], name: str, config_dir: Path = CONFIG_DIR) -> T:

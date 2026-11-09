@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import shutil
+from collections.abc import Callable
 from dataclasses import dataclass
 from types import TracebackType
 
@@ -96,9 +97,16 @@ def play_game(
 
 
 def play_match(
-    a: Bot, b: Bot, games: int, openings: list[chess.Board] | None = None
+    a: Bot,
+    b: Bot,
+    games: int,
+    openings: list[chess.Board] | None = None,
+    progress: Callable[[int, MatchResult], None] | None = None,
 ) -> MatchResult:
-    """``a`` vs ``b`` over ``games`` games (even). Each opening is played with both colours."""
+    """``a`` vs ``b`` over ``games`` games (even). Each opening is played with both colours.
+
+    ``progress(games_done, running_result)`` is called after every game if given.
+    """
     if games % 2:
         raise ValueError("games must be even so colours are balanced")
     book = openings if openings is not None else opening_boards()
@@ -115,4 +123,6 @@ def play_match(
                 losses += 1
             else:
                 draws += 1
+            if progress is not None:
+                progress(wins + draws + losses, MatchResult(wins, draws, losses))
     return MatchResult(wins, draws, losses)
