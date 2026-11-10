@@ -29,6 +29,7 @@ selfplay = "chessbot.cli:selfplay"
 play = "chessbot.cli:play"
 evaluate = "chessbot.cli:evaluate"
 smoke = "chessbot.smoke:main"
+uci = "chessbot.uci:main"
 
 [build-system]
 requires = ["hatchling"]

@@ -34,3 +34,10 @@ lichess-bot/config.yml
 
 # Generated progress page
 /reports/
+
+# Third-party Lichess bridge (cloned locally, not part of this repo)
+/lichess-bot/
+
+# Secrets
+.lichess_token
+*.token
