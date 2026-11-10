@@ -1,0 +1,27 @@
+{
+  "stage": "mcts-100-sims",
+  "complete": true,
+  "movetime": 0.05,
+  "seconds": 240.5,
+  "rating_stockfish_scale": {
+    "rating": 1696.0948524573505,
+    "low": 1612.5715778240765,
+    "high": 1789.2795116467669
+  },
+  "levels": [
+    {
+      "opponent_elo": 1500,
+      "wins": 21,
+      "draws": 4,
+      "losses": 5,
+      "score": 0.7666666666666667
+    },
+    {
+      "opponent_elo": 1700,
+      "wins": 12,
+      "draws": 5,
+      "losses": 13,
+      "score": 0.48333333333333334
+    }
+  ]
+}

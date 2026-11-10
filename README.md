@@ -20,7 +20,8 @@ uv run mypy src        # type check
 
 ```
 src/chessbot/   encoding, baselines, model, data, mcts, selfplay, eval, config
-configs/        YAML hyperparameters (model, train, mcts, eval)
+configs/        YAML hyperparameters (model, train, mcts, selfplay, eval)
+results/        Stockfish evaluation results and the Elo-by-stage chart
 scripts/        standalone entry scripts
 tests/          pytest suite
 docs/plan/      project plan, one file per step
@@ -31,11 +32,25 @@ docs/plan/      project plan, one file per step
 | Command | Status |
 |---|---|
 | `uv run smoke` | working |
-| `uv run train` | planned (Step 5) |
-| `uv run play` | planned (Step 6) |
-| `uv run evaluate` | planned (Step 8) |
+| `uv run train` | working: supervised pretraining |
+| `uv run selfplay` | working: gated self-play RL loop (resumable) |
+| `uv run evaluate mcts:CKPT:SIMS --name NAME` | working: rate a player against Stockfish, writes `results/` |
+| `uv run python scripts/dashboard.py --watch` | live progress page at `reports/progress.html` |
+| `uv run play` | planned (Step 9) |
 
 ## Progress
 
-- [x] Step 1: environment and tooling
-- [ ] Steps 0 and 2-10: see [docs/plan/](docs/plan/README.md)
+- [x] Steps 0-5: measurement protocol, tooling, encoding, baselines, network, supervised pretraining
+- [x] Step 6: MCTS search
+- [x] Step 7: self-play RL loop, run and evaluated
+- [~] Step 8: evaluation harness built; full-protocol runs done for the MCTS stages only
+- [ ] Steps 9-10: Lichess deployment, packaging
+
+Ratings so far (Stockfish scale, 400 games each, 95% interval; not Lichess ratings):
+
+| Player | Rating |
+|---|---|
+| Supervised network + MCTS (100 sims) | 1630 (1591 to 1667) |
+| After self-play RL + MCTS (100 sims) | 1647 (1611 to 1687) |
+
+Self-play's +17 Elo is within noise, so no real gain is claimed. Details are in [docs/progress-report.md](docs/progress-report.md) and the plan in [docs/plan/](docs/plan/README.md).

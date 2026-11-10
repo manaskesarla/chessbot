@@ -1,0 +1,41 @@
+{
+  "stage": "selfplay-v2-mcts100",
+  "complete": true,
+  "movetime": 0.05,
+  "seconds": 1528.6,
+  "rating_stockfish_scale": {
+    "rating": 1646.7629616212844,
+    "low": 1610.8317651874954,
+    "high": 1686.7293861261842
+  },
+  "levels": [
+    {
+      "opponent_elo": 1320,
+      "wins": 82,
+      "draws": 4,
+      "losses": 14,
+      "score": 0.84
+    },
+    {
+      "opponent_elo": 1500,
+      "wins": 54,
+      "draws": 14,
+      "losses": 32,
+      "score": 0.61
+    },
+    {
+      "opponent_elo": 1700,
+      "wins": 39,
+      "draws": 17,
+      "losses": 44,
+      "score": 0.475
+    },
+    {
+      "opponent_elo": 1900,
+      "wins": 12,
+      "draws": 27,
+      "losses": 61,
+      "score": 0.255
+    }
+  ]
+}

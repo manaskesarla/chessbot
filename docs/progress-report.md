@@ -1,6 +1,6 @@
 # Progress report: what's built, with what, and why
 
-Status: Steps 0 to 5 are done. Steps 6 to 10 are not started. 101 automated tests pass, and ruff and mypy report no issues.
+Status: Steps 0 to 7 are done and Step 8 is built and partly run. Steps 9 and 10 are not started. 132 automated tests pass. Step 7 finished with a measured result: self-play gave no statistically clear gain over the supervised network.
 
 **Technology used across the project**
 
@@ -131,14 +131,111 @@ That puts the raw network at roughly **1300 on Stockfish's scale**. It is a roug
 
 ---
 
+## Step 6: MCTS search
+
+**What was done:**
+- Batched PUCT Monte Carlo Tree Search with virtual loss, first-play urgency (0.2), Dirichlet noise at the root, exact values for checkmate/draw positions, and a position cache so repeated positions aren't re-evaluated.
+- `MCTSBot` (network plus search) and a heuristic evaluator used to test the search separately from the network.
+- `scripts/benchmark_mcts.py` and search support in `scripts/eval_net.py`. Search runs at about 1,000 simulations per second, and the mate-in-N puzzle tests pass.
+- Defaults in `configs/mcts.yaml`: 100 simulations, c_puct 1.5, batch size 16.
+
+**Strength with 100 simulations per move, 40 games per opponent (same network as Step 5):**
+
+| Opponent | W / D / L | Elo difference (95% range) |
+|---|---|---|
+| random | 40 / 0 / 0 | +759 |
+| greedy | 40 / 0 / 0 | +759 |
+| alpha-beta depth 2 | 30 / 6 / 4 | +269 (+167 to +440) |
+| alpha-beta depth 3 | 16 / 13 / 11 | +44 (-44 to +138) |
+| Stockfish 1320 | 30 / 3 / 7 | +228 (+121 to +396) |
+| Stockfish 1500 | 22 / 5 / 13 | +80 (-20 to +194) |
+| Stockfish 1700 | 10 / 11 / 19 | -80 (-181 to +10) |
+
+Search lifts the same network from roughly 1300 to the high 1500s or 1600s on Stockfish's scale.
+
+**Concepts**
+- **MCTS:** instead of trusting the network's first guess, the bot tries many move sequences and favours the ones that keep looking good.
+- **PUCT:** the rule for which move to explore next, balancing the network's prior, the results so far, and how rarely a move has been tried.
+- **Virtual loss and batching:** several searches run at once and are sent to the GPU together, which is what makes the network fast enough to use inside search.
+- **Dirichlet noise:** random extra exploration at the root, used in self-play so games don't repeat.
+
+---
+
+## Step 7: Self-play reinforcement learning
+
+**What was done:**
+- `src/chessbot/selfplay/`: parallel game generation (4 workers), a replay buffer, and the loop in `loop.py`. Each iteration plays 64 games with 64 simulations per move, then trains a candidate network on the stored search results, mixed 50/50 with human positions to stop it drifting away from sensible chess. The candidate then plays 32 gate games against the current best, and replaces it only with a score of at least 55%.
+- The loop saves its state after every iteration, so an interrupted run resumes where it stopped.
+- **Small first run (8 iterations of 64 games, ~12 min):** a smoke test. Only iteration 2 was promoted (57.8% on 32 games, within noise). Its network rated 1646 (1607 to 1687).
+- **Larger run (12 iterations, ~2 hours, `configs/selfplay.yaml`):** 200 games per iteration at 128 simulations per move, 800 training steps, a 300,000-position buffer, and 100 gate games at 128 simulations. Each iteration took about 10.5 minutes (games 4 min, training 1 min, gating 5 min). It started fresh from the supervised network.
+
+| Iter | Gate score | Result |
+|---|---|---|
+| 1 | 51.0% | rejected |
+| 2 | 50.0% | rejected |
+| 3 | 52.5% | rejected |
+| 4 | 39.5% | rejected |
+| 5 | 48.0% | rejected |
+| 6 | 48.0% | rejected |
+| 7 | 48.5% | rejected |
+| 8 | 41.0% | rejected |
+| 9 | 55.0% | **promoted** |
+| 10 | 43.5% | rejected |
+| 11 | 41.5% | rejected |
+| 12 | 54.5% | rejected |
+
+**Evaluation (MCTS with 100 simulations, 400 games each: 100 per Stockfish level at 1320, 1500, 1700, 1900):**
+
+| Network | Rating (Stockfish scale) | 95% interval |
+|---|---|---|
+| Supervised + MCTS | 1630 | 1591 to 1667 |
+| Small self-play run (iteration 2) + MCTS | 1646 | 1607 to 1687 |
+| Larger self-play run (iteration 9) + MCTS | **1647** | 1611 to 1687 |
+
+Per level for the larger run (W / D / L): 1320: 82/4/14, 1500: 54/14/32, 1700: 39/17/44, 1900: 12/27/61.
+
+**The three "done" checks:**
+- Runs unattended and resumes after interruption: met.
+- At least some iterations promote: met, but weakly. One of 12 promoted, and at exactly the 55% threshold.
+- Final net beats supervised + MCTS: higher by about 17 Elo, but the intervals overlap almost completely, so this is not a real gain.
+
+**What this means:** the self-play loop works end to end and the results are measured honestly, but at this scale (about 20,000 new positions per iteration against 10.75 million human ones) it did not clearly improve the network. The resume claim should be "built and evaluated a gated self-play loop; no significant gain at laptop scale", not "+X Elo from RL". Meaningful gains would likely need far more games and iterations than a Mac can run in a few hours.
+
+**Concepts**
+- **Self-play:** the bot generates its own training data by playing itself, with search as the "teacher".
+- **Policy target:** the search's visit counts, which are usually better than the raw network's guess, so the network learns to predict them.
+- **Replay buffer:** recent positions are kept and sampled at random, so training isn't dominated by the latest games.
+- **Gating:** a new network is only accepted if it beats the current one, which protects against a bad iteration making things worse.
+
+---
+
+## Step 8: Rigorous evaluation
+
+**What was done:**
+- `src/chessbot/eval/`: a harness that plays a network against Stockfish at several fixed Elo levels (1320, 1500, 1700, 1900 in `configs/eval.yaml`), a bootstrap fit that turns all the results into one rating with a 95% interval, and an Elo-by-stage chart. Run with `uv run evaluate`, with `--results-dir` for experiments.
+- Results are written to `results/<experiment>/summary.csv` and `elo_by_stage.png`, and shown on the dashboard.
+- **Search-budget experiment (`results/sims_scaling`):** MCTS at 100 simulations scored 1696 (1613 to 1789) on 60 games against Stockfish 1500 and 1700. The 400-simulation run was started but did not finish.
+- **Full-protocol runs (400 games each, results in `results/summary.csv` and `results/elo_by_stage.png`, committed):** supervised + MCTS 1630 (1591 to 1667), and the two self-play networks at 1646 and 1647. See Step 7 for the table.
+- **Still to run:** the earlier stages under the same protocol (random, greedy, alpha-beta, raw network without search) so the chart covers every stage.
+
+**Concepts**
+- **Stockfish scale:** the rating is relative to a weakened Stockfish at known Elo levels. It is not a Lichess rating.
+- **Bootstrap:** resampling the game results many times to see how much the rating would wobble, which gives an honest interval.
+
+---
+
+## Other tooling
+
+- `scripts/dashboard.py` writes `reports/progress.html`: training curves, running jobs, live log tails, Stockfish results, a self-play progress bar (percentage, iteration count and current phase in plain words), the self-play iteration table, and step status. It refreshes every 10 seconds with `--watch`.
+
+---
+
 ## What's next
 
 | Step | Goal |
 |---|---|
-| 6: MCTS search | Let the network "calculate" by exploring move sequences. Expected to add several hundred Elo over the 1300 starting point. |
-| 7: Self-play RL | The bot plays itself with search, learns from the results, and only accepts a new version if it beats the old one. |
-| 8: Rigorous evaluation | At least 100 games per level, with an Elo-versus-stage chart. |
+| 8 (finish) | Run the earlier stages (random, greedy, alpha-beta, raw network) under the same 400-game protocol so the Elo-by-stage chart is complete. |
 | 9: Lichess bot | A live public rating (needs a fresh Lichess account from you). |
 | 10: Resume packaging | Final README, ablations, honest write-up. |
 
-**Honest outlook:** on a Mac with no cloud spend, ~1750 on Lichess is a stretch. The plan is to report whatever is measured, with the contribution of each stage.
+**Honest outlook:** supervised network plus search rates about 1630 to 1650 on the Stockfish scale, which is encouraging, but Lichess ratings differ and self-play has not shown a gain. The plan is to report whatever is measured, with the contribution of each stage.

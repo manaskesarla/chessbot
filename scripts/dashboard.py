@@ -184,6 +184,54 @@ def stage_table() -> str:
     )
 
 
+def selfplay_progress() -> str:
+    """Plain-language progress of the self-play run: overall %, iterations, current phase."""
+    log = REPO_ROOT / "reports" / "selfplay.log"
+    if not log.exists():
+        return "<p class='muted'>Self-play has not started.</p>"
+    text = log.read_text(errors="replace")
+    heads = re.findall(r"=== iteration (\d+)/(\d+)", text)
+    if not heads:
+        return "<p class='muted'>Self-play is starting up (loading data)...</p>"
+    cur, total = int(heads[-1][0]), int(heads[-1][1])
+    finished = "best checkpoint:" in text
+    last_head = text.rfind("=== iteration")
+    tail = text[last_head:]
+    # Phase weights inside one iteration: games 0-55%, training 55-65%, gating 65-100%.
+    games_done, games_total = 0, 1
+    games_log = REPO_ROOT / "reports" / "selfplay_games.log"
+    if games_log.exists():
+        per_worker: dict[int, int] = {}
+        for line in reversed(games_log.read_text(errors="replace").splitlines()):
+            m = re.match(r"iter\s+(\d+)\s+worker\s+(\d+)\s+game\s+(\d+)/(\d+)", line)
+            if not m:
+                continue
+            if int(m.group(1)) != cur:
+                break
+            w = int(m.group(2))
+            per_worker[w] = max(per_worker.get(w, 0), int(m.group(3)))
+            games_total = max(games_total, int(m.group(4)))
+        games_done = sum(per_worker.values())
+        games_total = games_total * max(1, len(per_worker))
+    if finished:
+        frac, phase, cur = 1.0, "All iterations finished", total
+    elif "gating:" in tail:
+        frac, phase = 0.65, "Testing the new network against the current best"
+    elif "training candidate" in tail:
+        frac, phase = 0.55, "Training a new network on the games"
+    else:
+        frac = 0.55 * min(1.0, games_done / games_total)
+        phase = f"Playing games against itself ({games_done} of {games_total})"
+    completed = total if finished else cur - 1
+    pct = 100 * (completed + (0 if finished else frac)) / total
+    return (
+        f"<div class='bar'><i style='width:{pct:.1f}%'></i></div>"
+        f"<p><b>{pct:.0f}% done</b> &middot; iteration <b>{min(cur, total)} of {total}</b> "
+        f"({completed} fully completed)<br><span class='muted'>Now: {phase}. "
+        f"Percentage is approximate.</span></p>"
+    )
+
+
 def selfplay_table() -> str:
     path = REPO_ROOT / "checkpoints" / "selfplay" / "iterations.jsonl"
     if not path.exists():
@@ -313,7 +361,7 @@ td{{padding:9px 12px;border-top:1px solid var(--line);vertical-align:top}} tr:fi
 <div class="chart">{running_jobs()}</div>
 <h3>Live logs</h3>\n<div class="charts">{live_logs()}</div>\n<h3>Strength results (live)</h3>
 <div class="charts">{results_tables()}</div>
-<h3>Stage ratings (results/summary.csv)</h3>\n<div class="chart">{stage_table()}</div>\n<h3>Self-play iterations</h3>\n<div class="chart">{selfplay_table()}</div>\n<h3>Project steps</h3>
+<h3>Stage ratings (results/summary.csv)</h3>\n<div class="chart">{stage_table()}</div>\n<h3>Self-play progress</h3>\n<div class="chart">{selfplay_progress()}</div>\n<h3>Self-play iterations</h3>\n<div class="chart">{selfplay_table()}</div>\n<h3>Project steps</h3>
 <table>{rows}</table>
 <h3>Recent changes (git)</h3>
 {recent_commits()}
