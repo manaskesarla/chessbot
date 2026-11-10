@@ -28,8 +28,8 @@ STEPS = [
     ("Step 4", "Network", "ResNet 6x64, 505k params, ~27k positions/s on the Mac GPU"),
     ("Step 5", "Supervised pretraining", "150k Lichess 2000+ games, 10.75M positions"),
     ("Step 6", "MCTS search", "Batched PUCT search + position cache; ~1,000 sims/s; mate puzzles pass"),
-    ("Step 7", "Self-play RL loop", "Built and tested; first real run pending"),
-    ("Step 8", "Rigorous evaluation", "Built and tested: Stockfish harness, rating fit, chart; not yet run"),
+    ("Step 7", "Self-play RL loop", "12-iteration run done; 1647 vs 1630 supervised, within noise"),
+    ("Step 8", "Rigorous evaluation", "All stages rated vs Stockfish; MCTS adds about +265 Elo"),
     ("Step 9", "Lichess deployment", "Not started (needs a fresh Lichess account)"),
     ("Step 10", "Resume packaging", "Not started"),
 ]

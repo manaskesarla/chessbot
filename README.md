@@ -43,14 +43,19 @@ docs/plan/      project plan, one file per step
 - [x] Steps 0-5: measurement protocol, tooling, encoding, baselines, network, supervised pretraining
 - [x] Step 6: MCTS search
 - [x] Step 7: self-play RL loop, run and evaluated
-- [~] Step 8: evaluation harness built; full-protocol runs done for the MCTS stages only
+- [x] Step 8: rigorous evaluation of every stage against Stockfish; chart in `results/elo_by_stage.png`
 - [ ] Steps 9-10: Lichess deployment, packaging
 
-Ratings so far (Stockfish scale, 400 games each, 95% interval; not Lichess ratings):
+Ratings (Stockfish scale, 100 games per level, 95% interval; not Lichess ratings):
 
 | Player | Rating |
 |---|---|
+| Random / greedy | below about 500 |
+| Alpha-beta depth 2 / depth 3 | 1450 (1413 to 1487) / 1602 (1562 to 1642) |
+| Supervised network, no search | 1365 (1321 to 1406) |
 | Supervised network + MCTS (100 sims) | 1630 (1591 to 1667) |
 | After self-play RL + MCTS (100 sims) | 1647 (1611 to 1687) |
 
-Self-play's +17 Elo is within noise, so no real gain is claimed. Details are in [docs/progress-report.md](docs/progress-report.md) and the plan in [docs/plan/](docs/plan/README.md).
+![Elo by stage](results/elo_by_stage.png)
+
+Search adds about +265 Elo. Self-play's +17 Elo is within noise, so no real gain is claimed. Details are in [docs/progress-report.md](docs/progress-report.md) and the plan in [docs/plan/](docs/plan/README.md).

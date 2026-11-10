@@ -1,0 +1,20 @@
+{
+  "stage": "greedy",
+  "complete": true,
+  "movetime": 0.05,
+  "seconds": 118.3,
+  "rating_stockfish_scale": {
+    "rating": 521.74592216098,
+    "low": 400.45876943611745,
+    "high": 683.5741571894002
+  },
+  "levels": [
+    {
+      "opponent_elo": 1320,
+      "wins": 0,
+      "draws": 2,
+      "losses": 98,
+      "score": 0.01
+    }
+  ]
+}

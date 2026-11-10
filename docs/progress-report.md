@@ -1,6 +1,6 @@
 # Progress report: what's built, with what, and why
 
-Status: Steps 0 to 7 are done and Step 8 is built and partly run. Steps 9 and 10 are not started. 132 automated tests pass. Step 7 finished with a measured result: self-play gave no statistically clear gain over the supervised network.
+Status: Steps 0 to 8 are done. Steps 9 and 10 are not started. 132 automated tests pass. Step 7 finished with a measured result: self-play gave no statistically clear gain over the supervised network.
 
 **Technology used across the project**
 
@@ -215,8 +215,26 @@ Per level for the larger run (W / D / L): 1320: 82/4/14, 1500: 54/14/32, 1700: 3
 - `src/chessbot/eval/`: a harness that plays a network against Stockfish at several fixed Elo levels (1320, 1500, 1700, 1900 in `configs/eval.yaml`), a bootstrap fit that turns all the results into one rating with a 95% interval, and an Elo-by-stage chart. Run with `uv run evaluate`, with `--results-dir` for experiments.
 - Results are written to `results/<experiment>/summary.csv` and `elo_by_stage.png`, and shown on the dashboard.
 - **Search-budget experiment (`results/sims_scaling`):** MCTS at 100 simulations scored 1696 (1613 to 1789) on 60 games against Stockfish 1500 and 1700. The 400-simulation run was started but did not finish.
-- **Full-protocol runs (400 games each, results in `results/summary.csv` and `results/elo_by_stage.png`, committed):** supervised + MCTS 1630 (1591 to 1667), and the two self-play networks at 1646 and 1647. See Step 7 for the table.
-- **Still to run:** the earlier stages under the same protocol (random, greedy, alpha-beta, raw network without search) so the chart covers every stage.
+- **Full-protocol runs, all stages** (100 games per Stockfish level, colours alternated, varied openings; raw results in `results/*.json`, table in `results/summary.csv`, chart in `results/elo_by_stage.png`, all committed):
+
+| Stage | Rating (Stockfish scale) | 95% interval | Games |
+|---|---|---|---|
+| Random | about 400 (floor) | n/a | 100 |
+| Greedy | about 522 | 400 to 684 | 100 |
+| Alpha-beta depth 2 | 1450 | 1413 to 1487 | 300 |
+| Alpha-beta depth 3 | 1602 | 1562 to 1642 | 300 |
+| Supervised network, no search | 1365 | 1321 to 1406 | 300 |
+| Supervised + MCTS (100 sims) | 1630 | 1591 to 1667 | 400 |
+| Self-play iteration 2 + MCTS | 1646 | 1607 to 1687 | 400 |
+| Self-play iteration 9 + MCTS | 1647 | 1611 to 1687 | 400 |
+
+- Random and greedy lose almost every game even to the weakest level (1320), so only that level was played. Their numbers sit at the fit's lower limit and mean "below about 500", not a precise rating.
+- Stages are ordered from simplest bot to final network in the chart.
+
+**What the numbers say**
+- **Search is the biggest gain:** MCTS adds about **+265 Elo** to the same network (1365 to 1630), with non-overlapping intervals.
+- **Self-play: no clear gain** (+17 Elo, intervals overlap).
+- **An honest caveat:** a hand-written alpha-beta search at depth 3 (1602) is within a few dozen Elo of the learned network with search (1630); the intervals only just separate. So the neural network plus MCTS is better than a classic engine of similar depth, but not by a large margin.
 
 **Concepts**
 - **Stockfish scale:** the rating is relative to a weakened Stockfish at known Elo levels. It is not a Lichess rating.
@@ -234,7 +252,6 @@ Per level for the larger run (W / D / L): 1320: 82/4/14, 1500: 54/14/32, 1700: 3
 
 | Step | Goal |
 |---|---|
-| 8 (finish) | Run the earlier stages (random, greedy, alpha-beta, raw network) under the same 400-game protocol so the Elo-by-stage chart is complete. |
 | 9: Lichess bot | A live public rating (needs a fresh Lichess account from you). |
 | 10: Resume packaging | Final README, ablations, honest write-up. |
 

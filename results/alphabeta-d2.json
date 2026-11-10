@@ -1,0 +1,34 @@
+{
+  "stage": "alphabeta-d2",
+  "complete": true,
+  "movetime": 0.05,
+  "seconds": 857.3,
+  "rating_stockfish_scale": {
+    "rating": 1450.2709852006365,
+    "low": 1413.3155713235924,
+    "high": 1486.604505229963
+  },
+  "levels": [
+    {
+      "opponent_elo": 1320,
+      "wins": 60,
+      "draws": 16,
+      "losses": 24,
+      "score": 0.68
+    },
+    {
+      "opponent_elo": 1500,
+      "wins": 25,
+      "draws": 25,
+      "losses": 50,
+      "score": 0.375
+    },
+    {
+      "opponent_elo": 1700,
+      "wins": 15,
+      "draws": 19,
+      "losses": 66,
+      "score": 0.245
+    }
+  ]
+}
