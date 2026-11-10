@@ -147,6 +147,24 @@ def recent_commits() -> str:
     return f"<table>{rows}</table>"
 
 
+def live_logs(lines: int = 25) -> str:
+    """Tail of the most recently written reports/*.log files (newest first)."""
+    logs = sorted((REPO_ROOT / "reports").glob("*.log"), key=lambda p: p.stat().st_mtime,
+                  reverse=True)[:3]
+    if not logs:
+        return "<p class='muted'>No log files yet.</p>"
+    out = ""
+    for path in logs:
+        age = int(time.time() - path.stat().st_mtime)
+        tail = "\n".join(path.read_text(errors="replace").splitlines()[-lines:])
+        out += (
+            f"<div class='chart'><h3>{html.escape(path.name)} "
+            f"<span class='muted'>(updated {age}s ago)</span></h3>"
+            f"<pre>{html.escape(tail) or '(empty)'}</pre></div>"
+        )
+    return out
+
+
 def stage_table() -> str:
     """Rating per stage from results/summary.csv (written by `uv run evaluate`)."""
     path = REPO_ROOT / "results" / "summary.csv"
@@ -254,7 +272,7 @@ def build() -> str:
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="refresh" content="30">
+<meta http-equiv="refresh" content="10">
 <title>Chess Bot Progress</title>
 <style>
 :root{{--bg:#fafaf9;--fg:#1c1917;--muted:#78716c;--card:#fff;--line:#e7e5e4;
@@ -278,6 +296,7 @@ h1{{margin:0 0 4px;font-size:24px}} h3{{margin:0 0 6px;font-size:14px}}
 .legend{{display:flex;gap:14px;font-size:12px;margin-bottom:4px}}
 .key i{{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px}}
 table{{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden}}
+pre{{margin:0;padding:10px;max-height:340px;overflow:auto;font:12px/1.5 ui-monospace,Menlo,monospace;background:var(--bg);border:1px solid var(--line);border-radius:8px;white-space:pre-wrap}}
 table.res{{border:0}} th{{text-align:left;font-size:12px;color:var(--muted);padding:6px 12px}}
 ul{{margin:0;padding-left:18px}} code{{font-size:12px}}
 td{{padding:9px 12px;border-top:1px solid var(--line);vertical-align:top}} tr:first-child td{{border-top:0}}
@@ -285,14 +304,14 @@ td{{padding:9px 12px;border-top:1px solid var(--line);vertical-align:top}} tr:fi
 .done{{color:var(--ok)}} .run{{color:var(--run)}} .todo{{color:var(--muted)}}
 </style></head><body><main>
 <h1>Chess Bot Progress</h1>
-<div class="muted">Updated {updated}, auto-refreshes every 30 s. Training status:
+<div class="muted">Updated {updated}, auto-refreshes every 10 s. Training status:
 <b>{"finished" if done else "running"}</b> ({pct:.0f}%). Metrics are logged every {cfg.eval_every:,} steps.</div>
 <div class="bar"><i></i></div>
 <div class="stats">{stats}</div>
 <div class="charts">{charts}</div>
 <h3>Running right now</h3>
 <div class="chart">{running_jobs()}</div>
-<h3>Strength results (live)</h3>
+<h3>Live logs</h3>\n<div class="charts">{live_logs()}</div>\n<h3>Strength results (live)</h3>
 <div class="charts">{results_tables()}</div>
 <h3>Stage ratings (results/summary.csv)</h3>\n<div class="chart">{stage_table()}</div>\n<h3>Self-play iterations</h3>\n<div class="chart">{selfplay_table()}</div>\n<h3>Project steps</h3>
 <table>{rows}</table>
@@ -311,7 +330,7 @@ def main() -> None:
         print(f"wrote {OUT}")
         if not args.watch:
             return
-        time.sleep(30)
+        time.sleep(10)
 
 
 if __name__ == "__main__":

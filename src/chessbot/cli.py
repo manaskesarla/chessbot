@@ -47,10 +47,11 @@ def evaluate() -> None:
     parser.add_argument("--games", type=int, default=cfg.games_per_level, help="per level")
     parser.add_argument("--levels", type=int, nargs="+", default=list(cfg.stockfish_elos))
     parser.add_argument("--movetime", type=float, default=cfg.stockfish_movetime)
+    parser.add_argument("--results-dir", help="override results folder (e.g. for experiments)")
     parser.add_argument("--plot-only", action="store_true")
     args = parser.parse_args()
 
-    results_dir = Path(cfg.results_dir)
+    results_dir = Path(args.results_dir or cfg.results_dir)
     if not results_dir.is_absolute():
         results_dir = REPO_ROOT / results_dir
     if not args.plot_only:
