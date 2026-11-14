@@ -1,0 +1,6 @@
+date,game_id,url,time_control,bot_colour,opponent,opponent_rating,bot_rating_before,bot_rating_change,result,ended_by,opening,note
+2026-11-10,NM30FN8o,https://lichess.org/NM30FN8o,15+0,white,palebots,2884,3000,-346,loss,checkmate,"Sicilian Defense: Najdorf Variation, English Attack",
+2026-11-11,tG5UByBD,https://lichess.org/tG5UByBD,10+10,black,eigenmann-chess,2711,2654,-121,loss,checkmate,"Sicilian Defense: Kan Variation, Modern Variation",
+2026-11-11,51a5HIhH,https://lichess.org/51a5HIhH,15+10,black,eigenmann-chess,2714,2533,0,loss,checkmate,"Sicilian Defense: Kan Variation, Modern Variation",no rating change recorded by Lichess
+2026-11-11,PMxq4U9I,https://lichess.org/PMxq4U9I,15+0,black,PlayMarius,2243,2533,-201,loss,time,"Sicilian Defense: French Variation",bot process was stopped by hand at move 22
+2026-11-12,EkIRz9z3,https://lichess.org/EkIRz9z3,10+0,white,Vortex_Bot,2360,2332,-86,loss,time,"Italian Game: Two Knights Defense, Modern Bishop's Opening",bot machine went silent at move 32 with 9:41 on its clock
